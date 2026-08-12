@@ -1,154 +1,103 @@
-import streamlit as st
-import random
-import time
+import numpy as np
 
-# --- import streamlit as st
-import random
-import time
+# قائمة الألعاب المعتمدة والمحفوظة
+GAMES_LIST = [
+    "Chicken Runner",
+        "Chicken Cross That Road",
+            "Chicken Dash 10000",
+                "Chicken Crash 1xBet",
+                    "CrossFire Chicken x5000",
+                        "Mystake Chicken Game"
+                        ]
 
-# --- إعدادات الصفحة الأساسية والتصميم المظلم ---
-st.set_page_config(
-    page_title="LARA AI INJECTOR",
-    page_icon="⚡",
-    layout="centered"
-)
+                        def high_precision_analysis(history_data, selected_game=None):
+                            """
+                                تحليل عالي الدقة مفحوص ومحمي من الأخطاء البرمجية
+                                    """
+                                        # 1. التحقق من وجود بيانات كافية
+                                            if not history_data or len(history_data) < 4:
+                                                    return {"status": "error", "message": "يتطلب التحليل 4 قراءات على الأقل."}
 
-# تخصيص واجهة تشبه الواجهة الموضحة بالصورة
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #0b0f19;
-        color: #ffffff;
-    }
-    .big-mult {
-        font-size: 64px !important;
-        font-weight: 800;
-        text-align: center;
-        color: #ffffff;
-        margin: 10px 0;
-        font-family: monospace;
-    }
-    .terminal-box {
-        background-color: #000000;
-        border: 1px solid #1a233a;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: monospace;
-        color: #00ff66;
-        font-size: 12px;
-        height: 110px;
-        overflow-y: auto;
-        margin-bottom: 20px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+                                                        # 2. التأكد من صحة نوع البيانات المدخلة
+                                                            try:
+                                                                    data = np.array(history_data, dtype=float)
+                                                                            if np.any(data < 1.0):
+                                                                                        return {"status": "error", "message": "المضاعفات يجب أن تكون أكبر من أو تساوي 1.0"}
+                                                                                            except (ValueError, TypeError):
+                                                                                                    return {"status": "error", "message": "تحتوي البيانات على قيم غير رقمية."}
 
-# --- إدارة حالة التصفح (Session State) ---
-if "current_page" not in st.session_state:
-    st.session_state.current_page = "home"
+                                                                                                        # 3. التحقق من اسم اللعبة
+                                                                                                            validated_game = selected_game if selected_game in GAMES_LIST else "عام / غير محدد"
 
-if "selected_game" not in st.session_state:
-    st.session_state.selected_game = None
+                                                                                                                n = len(data)
 
-if "selected_difficulty" not in st.session_state:
-    st.session_state.selected_difficulty = "EASY"
+                                                                                                                    # 4. تصفية الشطحات العالية بـ Modified Z-Score
+                                                                                                                        median = np.median(data)
+                                                                                                                            mad = np.median(np.abs(data - median))
 
-if "result_mult" not in st.session_state:
-    st.session_state.result_mult = "0.00x"
+                                                                                                                                if mad != 0:
+                                                                                                                                        modified_z = 0.6745 * (data - median) / mad
+                                                                                                                                                filtered_data = np.where(np.abs(modified_z) > 3.0, median + (1.5 * mad), data)
+                                                                                                                                                    else:
+                                                                                                                                                            filtered_data = data
 
-# ==========================================
-# 1. الصفحة الرئيسية (اختيار اللعبة من الـ 5)
-# ==========================================
-if st.session_state.current_page == "home":
-    st.markdown("<h2 style='text-align: center;'>⚡ LARA AI INJECTOR</h2>", unsafe_allow_html=True)
-    st.caption("اختر اللعبة لبدء عملية التحليل والأوامر")
-    st.divider()
+                                                                                                                                                                # 5. حساب المتوسط المتحرك المزدوج (Dual EMA)
+                                                                                                                                                                    alpha_short = 2.0 / (min(n, 3) + 1)
+                                                                                                                                                                        alpha_long = 2.0 / (n + 1)
 
-    # قائمة الألعاب الـ 5 الخاصة بك
-    games = [
-        {"name": "🐔 Chicken Road Core", "desc": "تحليل مسارات لعبة الدجاج الرئيسية"},
-        {"name": "🐥 Chicken Cross", "desc": "تحليل مناطق العبور والتراجع"},
-        {"name": "🐔 Golden Chicken", "desc": "استخراج مضاعفات الدجاجة الذهبية"},
-        {"name": "🍗 Chicken Bonus", "desc": "تحليل جولات المكافآت والمضاعفات"},
-        {"name": "🐣 Mini Chicken", "desc": "تحليل الجولات السريعة ذات المخاطرة"}
-    ]
+                                                                                                                                                                            ema_short = filtered_data[0]
+                                                                                                                                                                                ema_long = filtered_data[0]
 
-    for game in games:
-        with st.container(border=True):
-            st.markdown(f"### {game['name']}")
-            st.write(game['desc'])
-            if st.button(f"🚀 الدخول للعبة", key=game['name'], use_container_width=True):
-                st.session_state.selected_game = game['name']
-                st.session_state.current_page = "game_dashboard"
-                st.session_state.result_mult = "0.00x"
-                st.rerun()
+                                                                                                                                                                                    for x in filtered_data[1:]:
+                                                                                                                                                                                            ema_short = (x * alpha_short) + (ema_short * (1 - alpha_short))
+                                                                                                                                                                                                    ema_long = (x * alpha_long) + (ema_long * (1 - alpha_long))
 
-# ==========================================
-# 2. شاشة التحليل (مطابقة للصورة بالكامل)
-# ==========================================
-elif st.session_state.current_page == "game_dashboard":
-    
-    if st.button("⬅️ خروج / اختيار لعبة أخرى"):
-        st.session_state.current_page = "home"
-        st.rerun()
+                                                                                                                                                                                                        # 6. حساب السلسلة المنخفضة المتتالية
+                                                                                                                                                                                                            low_streak = 0
+                                                                                                                                                                                                                for val in reversed(history_data):
+                                                                                                                                                                                                                        if val <= 1.35:
+                                                                                                                                                                                                                                    low_streak += 1
+                                                                                                                                                                                                                                            else:
+                                                                                                                                                                                                                                                        break
 
-    st.markdown("<h3 style='text-align: center; color: #4b8bf5;'>LARA <span style='color:#00ff66;'>AI INJECTOR</span></h3>", unsafe_allow_html=True)
-    st.caption(f"اللعبة الحالية: {st.session_state.selected_game}")
-    
-    # الإطار الموحد للتحليل (شكل الصورة)
-    with st.container(border=True):
-        st.markdown("<div style='text-align: center; color: #888; font-size: 12px;'>GATEWAY: ACTIVE &nbsp;&nbsp;|&nbsp;&nbsp; PING: 24ms</div>", unsafe_allow_html=True)
-        
-        # عرض المضاعف الرئيسي الكبيير
-        st.markdown(f"<div class='big-mult'>{st.session_state.result_mult}</div>", unsafe_allow_html=True)
+                                                                                                                                                                                                                                                            # 7. حساب التقلب والانحراف المعياري
+                                                                                                                                                                                                                                                                std_dev = np.std(filtered_data)
+                                                                                                                                                                                                                                                                    mean_val = np.mean(filtered_data)
+                                                                                                                                                                                                                                                                        volatility = std_dev / (mean_val + 1e-6)
 
-        # شاشة الترمينال / السجل
-        current_time = time.strftime("%H:%M:%S")
-        terminal_text = f"""
-        [{current_time}] SYSTEM INITIALIZED...<br>
-        [{current_time}] LOADING MODULES...<br>
-        [{current_time}] {st.session_state.selected_game.upper()}...<br>
-        [{current_time}] SELECTED LEVEL: {st.session_state.selected_difficulty}<br>
-        [{current_time}] READY FOR OPERATION.
-        """
-        st.markdown(f"<div class='terminal-box'>{terminal_text}</div>", unsafe_allow_html=True)
+                                                                                                                                                                                                                                                                            # 8. حساب التوقع الموزون
+                                                                                                                                                                                                                                                                                base_prediction = (ema_short * 0.65) + (ema_long * 0.35)
 
-        # أزرار اختيار المستوى (EASY, MEDIUM, HARD, HARDCORE)
-        st.write("اختر مستوى الصعوبة:")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("EASY", use_container_width=True, type="primary" if st.session_state.selected_difficulty == "EASY" else "secondary"):
-                st.session_state.selected_difficulty = "EASY"
-                st.rerun()
-            if st.button("HARD", use_container_width=True, type="primary" if st.session_state.selected_difficulty == "HARD" else "secondary"):
-                st.session_state.selected_difficulty = "HARD"
-                st.rerun()
+                                                                                                                                                                                                                                                                                    if low_streak >= 3:
+                                                                                                                                                                                                                                                                                            adjusted_prediction = base_prediction * 1.10
+                                                                                                                                                                                                                                                                                                else:
+                                                                                                                                                                                                                                                                                                        adjusted_prediction = base_prediction
 
-        with col2:
-            if st.button("MEDIUM", use_container_width=True, type="primary" if st.session_state.selected_difficulty == "MEDIUM" else "secondary"):
-                st.session_state.selected_difficulty = "MEDIUM"
-                st.rerun()
-            if st.button("HARDCORE", use_container_width=True, type="primary" if st.session_state.selected_difficulty == "HARDCORE" else "secondary"):
-                st.session_state.selected_difficulty = "HARDCORE"
-                st.rerun()
+                                                                                                                                                                                                                                                                                                            # 9. تقييم الهدف الآمن ونسبة الثقة
+                                                                                                                                                                                                                                                                                                                safe_target = max(1.05, round(float(min(adjusted_prediction, median)), 2))
+                                                                                                                                                                                                                                                                                                                    predicted_val = round(float(adjusted_prediction), 2)
+                                                                                                                                                                                                                                                                                                                        confidence_score = max(55.0, min(95.0, 100.0 - (volatility * 30.0)))
 
-        st.markdown("<br>", unsafe_allow_html=True)
+                                                                                                                                                                                                                                                                                                                            return {
+                                                                                                                                                                                                                                                                                                                                    "status": "success",
+                                                                                                                                                                                                                                                                                                                                            "game": validated_game,
+                                                                                                                                                                                                                                                                                                                                                    "predicted_multiplier": predicted_val,
+                                                                                                                                                                                                                                                                                                                                                            "safe_target": safe_target,
+                                                                                                                                                                                                                                                                                                                                                                    "confidence": f"{round(confidence_score, 1)}%",
+                                                                                                                                                                                                                                                                                                                                                                            "trend": "صاعد (Upward)" if ema_short >= ema_long else "مستقر/هابط (Stable)",
+                                                                                                                                                                                                                                                                                                                                                                                    "risk_level": "منخفض" if volatility < 0.35 else "متوسط/مرتفع",
+                                                                                                                                                                                                                                                                                                                                                                                            "consecutive_lows": low_streak
+                                                                                                                                                                                                                                                                                                                                                                                                }
 
-        # زر بدء التحليل البرتقالي الكبير (ЗАПУСТИТЬ АНАЛИЗ / START ANALYSIS)
-        if st.button("🔥 ЗАПУСТИТЬ АНАЛИЗ (بدء التحليل)", use_container_width=True, type="primary"):
-            with st.spinner("جاري المعالجة والحساب..."):
-                time.sleep(1)
-                
-                # توليد مضاعف بناءً على المستوى المحدد
-                if st.session_state.selected_difficulty == "EASY":
-                    val = round(random.uniform(1.10, 1.80), 2)
-                elif st.session_state.selected_difficulty == "MEDIUM":
-                    val = round(random.uniform(1.85, 3.50), 2)
-                elif st.session_state.selected_difficulty == "HARD":
-                    val = round(random.uniform(3.60, 7.50), 2)
-                else: # HARDCORE
-                    val = round(random.uniform(8.00, 25.00), 2)
-
-                st.session_state.result_mult = f"{val}x"
-                st.rerun()
+                                                                                                                                                                                                                                                                                                                                                                                                # --- اختبار تشغيل الكود للتأكد من المخرجات ---
+                                                                                                                                                                                                                                                                                                                                                                                                if __name__ == "__main__":
+                                                                                                                                                                                                                                                                                                                                                                                                    # تجربة مدخلات لـ 6 أدوار سابقة
+                                                                                                                                                                                                                                                                                                                                                                                                        test_data = [1.15, 1.22, 1.10, 4.20, 1.18, 1.30]
+                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                                                # إجراء التحليل على إحدى الألعاب المعتمدة
+                                                                                                                                                                                                                                                                                                                                                                                                                    result = high_precision_analysis(test_data, selected_game="CrossFire Chicken x5000")
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                            print("--- نتيجة فحص الكود ---")
+                                                                                                                                                                                                                                                                                                                                                                                                                                for key, value in result.items():
+                                                                                                                                                                                                                                                                                                                                                                                                                                        print(f"{key}: {value}")
+                                                                                                                                                                                                                                                                                                                                                                                                                                        
