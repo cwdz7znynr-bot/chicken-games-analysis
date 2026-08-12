@@ -1,4 +1,4 @@
-import streamlit as st
+                                                                                                                                                                                                                                                                                                                                                                                   import streamlit as st
 import numpy as np
 
 # إعدادات الصفحة
@@ -7,125 +7,124 @@ st.set_page_config(page_title="تحليل ألعاب Chicken", page_icon="🐔",
 # 1. قائمة الألعاب المعتمدة
 GAMES_LIST = [
     "Chicken Runner",
-        "Chicken Cross That Road",
-            "Chicken Dash 10000",
-                "Chicken Crash 1xBet",
-                    "CrossFire Chicken x5000",
-                        "Mystake Chicken Game"
-                        ]
+    "Chicken Cross That Road",
+    "Chicken Dash 10000",
+    "Chicken Crash 1xBet",
+    "CrossFire Chicken x5000",
+    "Mystake Chicken Game"
+]
 
-                        def high_precision_analysis(history_data, selected_game=None):
-                            """دالة التحليل الدقيق"""
-                                if not history_data or len(history_data) < 4:
-                                        return {"status": "error", "message": "يتطلب التحليل 4 قراءات على الأقل."}
+def high_precision_analysis(history_data, selected_game=None):
+    """دالة التحليل الدقيق"""
+    if not history_data or len(history_data) < 4:
+        return {"status": "error", "message": "يتطلب التحليل 4 قراءات على الأقل."}
 
-                                            try:
-                                                    data = np.array(history_data, dtype=float)
-                                                            if np.any(data < 1.0):
-                                                                        return {"status": "error", "message": "المضاعفات يجب أن تكون أكبر من أو تساوي 1.0"}
-                                                                            except (ValueError, TypeError):
-                                                                                    return {"status": "error", "message": "تحتوي البيانات على قيم غير رقمية."}
+    try:
+        data = np.array(history_data, dtype=float)
+        if np.any(data < 1.0):
+            return {"status": "error", "message": "المضاعفات يجب أن تكون أكبر من أو تساوي 1.0"}
+    except (ValueError, TypeError):
+        return {"status": "error", "message": "تحتوي البيانات على قيم غير رقمية."}
 
-                                                                                        validated_game = selected_game if selected_game in GAMES_LIST else "عام / غير محدد"
-                                                                                            n = len(data)
+    validated_game = selected_game if selected_game in GAMES_LIST else "عام / غير محدد"
+    n = len(data)
 
-                                                                                                # 1. تصفية الشطحات بـ Modified Z-Score
-                                                                                                    median = np.median(data)
-                                                                                                        mad = np.median(np.abs(data - median))
+    # 1. تصفية الشطحات بـ Modified Z-Score
+    median = np.median(data)
+    mad = np.median(np.abs(data - median))
 
-                                                                                                            if mad != 0:
-                                                                                                                    modified_z = 0.6745 * (data - median) / mad
-                                                                                                                            filtered_data = np.where(np.abs(modified_z) > 3.0, median + (1.5 * mad), data)
-                                                                                                                                else:
-                                                                                                                                        filtered_data = data
+    if mad != 0:
+        modified_z = 0.6745 * (data - median) / mad
+        filtered_data = np.where(np.abs(modified_z) > 3.0, median + (1.5 * mad), data)
+    else:
+        filtered_data = data
 
-                                                                                                                                            # 2. حساب المتوسط المتحرك المزدوج (Dual EMA)
-                                                                                                                                                alpha_short = 2.0 / (min(n, 3) + 1)
-                                                                                                                                                    alpha_long = 2.0 / (n + 1)
+    # 2. حساب المتوسط المتحرك المزدوج (Dual EMA)
+    alpha_short = 2.0 / (min(n, 3) + 1)
+    alpha_long = 2.0 / (n + 1)
 
-                                                                                                                                                        ema_short = filtered_data[0]
-                                                                                                                                                            ema_long = filtered_data[0]
+    ema_short = filtered_data[0]
+    ema_long = filtered_data[0]
 
-                                                                                                                                                                for x in filtered_data[1:]:
-                                                                                                                                                                        ema_short = (x * alpha_short) + (ema_short * (1 - alpha_short))
-                                                                                                                                                                                ema_long = (x * alpha_long) + (ema_long * (1 - alpha_long))
+    for x in filtered_data[1:]:
+        ema_short = (x * alpha_short) + (ema_short * (1 - alpha_short))
+        ema_long = (x * alpha_long) + (ema_long * (1 - alpha_long))
 
-                                                                                                                                                                                    # 3. حساب السلسلة المنخفضة
-                                                                                                                                                                                        low_streak = 0
-                                                                                                                                                                                            for val in reversed(history_data):
-                                                                                                                                                                                                    if val <= 1.35:
-                                                                                                                                                                                                                low_streak += 1
-                                                                                                                                                                                                                        else:
-                                                                                                                                                                                                                                    break
+    # 3. حساب السلسلة المنخفضة
+    low_streak = 0
+    for val in reversed(history_data):
+        if val <= 1.35:
+            low_streak += 1
+        else:
+            break
 
-                                                                                                                                                                                                                                        # 4. حساب التقلب
-                                                                                                                                                                                                                                            std_dev = np.std(filtered_data)
-                                                                                                                                                                                                                                                mean_val = np.mean(filtered_data)
-                                                                                                                                                                                                                                                    volatility = std_dev / (mean_val + 1e-6)
+    # 4. حساب التقلب
+    std_dev = np.std(filtered_data)
+    mean_val = np.mean(filtered_data)
+    volatility = std_dev / (mean_val + 1e-6)
 
-                                                                                                                                                                                                                                                        # 5. التوقع الموزون
-                                                                                                                                                                                                                                                            base_prediction = (ema_short * 0.65) + (ema_long * 0.35)
+    # 5. التوقع الموزون
+    base_prediction = (ema_short * 0.65) + (ema_long * 0.35)
 
-                                                                                                                                                                                                                                                                if low_streak >= 3:
-                                                                                                                                                                                                                                                                        adjusted_prediction = base_prediction * 1.10
-                                                                                                                                                                                                                                                                            else:
-                                                                                                                                                                                                                                                                                    adjusted_prediction = base_prediction
+    if low_streak >= 3:
+        adjusted_prediction = base_prediction * 1.10
+    else:
+        adjusted_prediction = base_prediction
 
-                                                                                                                                                                                                                                                                                        safe_target = max(1.05, round(float(min(adjusted_prediction, median)), 2))
-                                                                                                                                                                                                                                                                                            predicted_val = round(float(adjusted_prediction), 2)
-                                                                                                                                                                                                                                                                                                confidence_score = max(55.0, min(95.0, 100.0 - (volatility * 30.0)))
+    safe_target = max(1.05, round(float(min(adjusted_prediction, median)), 2))
+    predicted_val = round(float(adjusted_prediction), 2)
+    confidence_score = max(55.0, min(95.0, 100.0 - (volatility * 30.0)))
 
-                                                                                                                                                                                                                                                                                                    return {
-                                                                                                                                                                                                                                                                                                            "status": "success",
-                                                                                                                                                                                                                                                                                                                    "game": validated_game,
-                                                                                                                                                                                                                                                                                                                            "predicted_multiplier": predicted_val,
-                                                                                                                                                                                                                                                                                                                                    "safe_target": safe_target,
-                                                                                                                                                                                                                                                                                                                                            "confidence": f"{round(confidence_score, 1)}%",
-                                                                                                                                                                                                                                                                                                                                                    "trend": "صاعد (Upward)" if ema_short >= ema_long else "مستقر/هابط (Stable)",
-                                                                                                                                                                                                                                                                                                                                                            "risk_level": "منخفض" if volatility < 0.35 else "متوسط/مرتفع",
-                                                                                                                                                                                                                                                                                                                                                                    "consecutive_lows": low_streak
-                                                                                                                                                                                                                                                                                                                                                                        }
+    return {
+        "status": "success",
+        "game": validated_game,
+        "predicted_multiplier": predicted_val,
+        "safe_target": safe_target,
+        "confidence": f"{round(confidence_score, 1)}%",
+        "trend": "صاعد (Upward)" if ema_short >= ema_long else "مستقر/هابط (Stable)",
+        "risk_level": "منخفض" if volatility < 0.35 else "متوسط/مرتفع",
+        "consecutive_lows": low_streak
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                        # --- واجهة المستخدم عبر Streamlit ---
-                                                                                                                                                                                                                                                                                                                                                                        st.title("🐔 نظام تحليل ألعاب Chicken المتقدم")
-                                                                                                                                                                                                                                                                                                                                                                        st.write("أدخل نتائج الجولات السابقة للحصول على تحليل إحصائي متزن ودقيق.")
+# --- واجهة المستخدم عبر Streamlit ---
+st.title("🐔 نظام تحليل ألعاب Chicken المتقدم")
+st.write("أدخل نتائج الجولات السابقة للحصول على تحليل إحصائي متزن ودقيق.")
 
-                                                                                                                                                                                                                                                                                                                                                                        # اختيار اللعبة
-                                                                                                                                                                                                                                                                                                                                                                        selected_game = st.selectbox("اختر اللعبة:", GAMES_LIST)
+# اختيار اللعبة
+selected_game = st.selectbox("اختر اللعبة:", GAMES_LIST)
 
-                                                                                                                                                                                                                                                                                                                                                                        # أدخل البيانات
-                                                                                                                                                                                                                                                                                                                                                                        raw_input = st.text_input(
-                                                                                                                                                                                                                                                                                                                                                                            "أدخل المضاعفات السابقة (مفصولة بمسافات أو فاصلة):",
-                                                                                                                                                                                                                                                                                                                                                                                placeholder="مثال: 1.15 1.20 1.10 3.50 1.25"
-                                                                                                                                                                                                                                                                                                                                                                                )
+# أدخل البيانات
+raw_input = st.text_input(
+    "أدخل المضاعفات السابقة (مفصولة بمسافات أو فاصلة):",
+    placeholder="مثال: 1.15 1.20 1.10 3.50 1.25"
+)
 
-                                                                                                                                                                                                                                                                                                                                                                                if st.button("تحليل البيانات"):
-                                                                                                                                                                                                                                                                                                                                                                                    if raw_input.strip():
-                                                                                                                                                                                                                                                                                                                                                                                            # معالجة النص وتحويله لقائمة أرقام
-                                                                                                                                                                                                                                                                                                                                                                                                    try:
-                                                                                                                                                                                                                                                                                                                                                                                                                formatted_input = raw_input.replace(',', ' ')
-                                                                                                                                                                                                                                                                                                                                                                                                                            data_list = [float(x) for x in formatted_input.split()]
-                                                                                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    res = high_precision_analysis(data_list, selected_game)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if res["status"] == "error":
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            st.error(res["message"])
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        else:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        st.success("تم التحليل بنجاح!")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        col1, col2 = st.columns(2)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        with col1:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            st.metric("التوقع الدقيق القادم", f"{res['predicted_multiplier']}x")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                st.metric("نسبة الثقة", res["confidence"])
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    st.write(f"**اتجاه الحركة:** {res['trend']}")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    with col2:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        st.metric("الهدف الآمن جداً", f"{res['safe_target']}x")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            st.metric("مستوى المخاطرة", res["risk_level"])
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                st.write(f"**عدد الانخفاضات المتتالية:** {res['consecutive_lows']}")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            except ValueError:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        st.error("يرجى التأكد من إدخال أرقام فقط مفصولة بمسافات.")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            else:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    st.warning("يرجى إدخال البيانات أولاً.")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+if st.button("تحليل البيانات"):
+    if raw_input.strip():
+        # معالجة النص وتحويله لقائمة أرقام
+        try:
+            formatted_input = raw_input.replace(',', ' ')
+            data_list = [float(x) for x in formatted_input.split()]
+            
+            res = high_precision_analysis(data_list, selected_game)
+            
+            if res["status"] == "error":
+                st.error(res["message"])
+            else:
+                st.success("تم التحليل بنجاح!")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("التوقع الدقيق القادم", f"{res['predicted_multiplier']}x")
+                    st.metric("نسبة الثقة", res["confidence"])
+                    st.write(f"**اتجاه الحركة:** {res['trend']}")
+                
+                with col2:
+                    st.metric("الهدف الآمن جداً", f"{res['safe_target']}x")
+                    st.metric("مستوى المخاطرة", res["risk_level"])
+                    st.write(f"**عدد الانخفاضات المتتالية:** {res['consecutive_lows']}")
+                    
+        except ValueError:
+            st.error("يرجى التأكد من إدخال أرقام فقط مفصولة بمسافات.")
+    else:
+        st.warning("يرجى إدخال البيانات أولاً.")
